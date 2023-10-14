@@ -1,6 +1,8 @@
 import os
 import cv2
 import pkg_resources
+from pprint import pprint
+import json
 
 # My libs
 import spiga.demo.analyze.track.get_tracker as tr
@@ -51,6 +53,7 @@ def main():
 def video_app(input_name, spiga_dataset=None, tracker=None, fps=30, save=False,
               output_path=video_out_path_dft, video_shape=None, visualize=True, plot=()):
 
+    objects = []
     # Load video
     try:
         capture = cv2.VideoCapture(int(input_name))
@@ -91,7 +94,21 @@ def video_app(input_name, spiga_dataset=None, tracker=None, fps=30, save=False,
             ret, frame = capture.read()
             if ret:
                 # Process frame
-                faces_analyzer.process_frame(frame)
+                tracked_obj = faces_analyzer.process_frame(frame)
+                tracked_obj = [x.get_attributes() for x in tracked_obj]
+                # pprint(tracked_obj)
+                objects.append(tracked_obj)
+
+                # TODO
+                # save json to same folder, in one line for smaller file size
+                result_json_path = os.path.join(output_path, video_name + '.json')
+                with open(result_json_path, 'w') as f:
+                    json.dump(objects, f)
+
+                # save video to same folder
+
+
+
                 # Show results
                 key = viewer.process_image(frame, drawers=[faces_analyzer], show_attributes=plot)
                 if key:
@@ -105,3 +122,7 @@ def video_app(input_name, spiga_dataset=None, tracker=None, fps=30, save=False,
 
 if __name__ == '__main__':
     main()
+
+"""
+find /data/datasets_v2/clip_videos_v3/ -type f -name "2016*.mp4" | xargs -I {} -P 6 sh -c "CUDA_VISIBLE_DEVICES=0 python ./spiga/demo/app.py --input {} --save --noview --outpath /data/datasets_v2/faces_v3/" &
+"""

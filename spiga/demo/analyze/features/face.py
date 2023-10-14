@@ -15,6 +15,20 @@ class Face(ObjectAnalyzed):
         self.past_states = []
         self.num_past_states = 5
 
+    def get_attributes(self):
+        # 2d array to list
+        bbox = self.bbox.tolist()
+        key_landmarks = self.key_landmarks.tolist()
+
+        return {
+            "bbox":bbox,
+            "key_landmarks":key_landmarks,
+            "landmarks":self.landmarks,
+            "face_id":self.face_id,
+            "past_states":self.past_states,
+            "num_past_states":self.num_past_states
+        }
+
 
 
 

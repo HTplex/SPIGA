@@ -40,6 +40,8 @@ pip install -e .
 
 # To run the video analyzer demo install the extra requirements.
 pip install -e .[demo]
+
+download weights from google drive if app.py fails to download them automatically. and copy them to corresponding folders, backup also in google drive spiga folder.
 ```
 **Models:** By default, model weights are automatically downloaded on demand and stored at ```./spiga/models/weights/```.
 You can also download them from [Google Drive](https://drive.google.com/drive/folders/1olrkoiDNK_NUCscaG9BbO3qsussbDi7I?usp=sharing). 
