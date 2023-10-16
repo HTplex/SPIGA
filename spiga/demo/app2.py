@@ -79,59 +79,62 @@ def video_app(input_name, spiga_dataset=None, tracker=None, fps=30, save=False,
             video_list.append(input_name)
     print('total videos part:', len(video_list))
 
-    # for input_name in tqdm(video_list):
-    #     # Load video
-    #     capture = cv2.VideoCapture(input_name)
+    for input_name in tqdm(video_list):
+        # Load video
+        capture = cv2.VideoCapture(input_name)
 
-    #     objects = []
-    #     faces_tracker = tr.get_tracker(tracker)
-    #     # Initialize viewer
-    #     if video_shape is not None:
-    #         vid_w, vid_h = video_shape
-    #     else:
-    #         vid_w, vid_h = capture.get(3), capture.get(4)
-    #     viewer = Viewer('face_app', width=vid_w, height=vid_h, fps=fps)
-    #     if save:
-    #         viewer.record_video(output_path, video_name)
+        objects = []
+        faces_tracker = tr.get_tracker(tracker)
+        # Initialize viewer
+        if video_shape is not None:
+            vid_w, vid_h = video_shape
+        else:
+            vid_w, vid_h = capture.get(3), capture.get(4)
+        viewer = Viewer('face_app', width=vid_w, height=vid_h, fps=fps)
+        if save:
+            viewer.record_video(output_path, video_name)
 
-    #     # Initialize face tracker
-    #     faces_tracker.detector.set_input_shape(capture.get(4), capture.get(3))
-    #     # Initialize processors
-    #     processor = pr_spiga.SPIGAProcessor(dataset=spiga_dataset)
-    #     # Initialize Analyzer
-    #     faces_analyzer = VideoAnalyzer(faces_tracker, processor=processor)
+        # Initialize face tracker
+        faces_tracker.detector.set_input_shape(capture.get(4), capture.get(3))
+        # Initialize processors
+        processor = pr_spiga.SPIGAProcessor(dataset=spiga_dataset)
+        # Initialize Analyzer
+        faces_analyzer = VideoAnalyzer(faces_tracker, processor=processor)
 
-    #     # Convert FPS to the amount of milliseconds that each frame will be displayed
-    #     if visualize:
-    #         viewer.start_view()
-    #     while capture.isOpened():
-    #         ret, frame = capture.read()
-    #         if ret:
-    #             # Process frame
-    #             tracked_obj = faces_analyzer.process_frame(frame)
-    #             tracked_obj = [x.get_attributes() for x in tracked_obj]
-    #             # pprint(tracked_obj)
-    #             objects.append(tracked_obj)
+        # Convert FPS to the amount of milliseconds that each frame will be displayed
+        if visualize:
+            viewer.start_view()
+        while capture.isOpened():
+            ret, frame = capture.read()
+            if ret:
+                # Process frame
+                tracked_obj = faces_analyzer.process_frame(frame)
+                tracked_obj = [x.get_attributes() for x in tracked_obj]
+                # pprint(tracked_obj)
+                objects.append(tracked_obj)
 
-    #             # TODO
-    #             # save json to same folder, in one line for smaller file size
-    #             with open(result_json_path, 'w') as f:
-    #                 json.dump(objects, f)
+                # TODO
+                # save json to same folder, in one line for smaller file size
+                with open(result_json_path, 'w') as f:
+                    json.dump(objects, f)
 
-    #             # Show results
-    #             key = viewer.process_image(frame, drawers=[faces_analyzer], show_attributes=plot)
-    #             if key:
-    #                 break
-    #         else:
-    #             break
+                # Show results
+                key = viewer.process_image(frame, drawers=[faces_analyzer], show_attributes=plot)
+                if key:
+                    break
+            else:
+                break
 
-    #         capture.release()
-    #         viewer.close()
+            capture.release()
+            viewer.close()
 
 
 if __name__ == '__main__':
     main()
 
 """
-find /data/datasets_v2/clip_videos_v3/ -type f -name "2016*.mp4" | xargs -I {} -P 6 sh -c "CUDA_VISIBLE_DEVICES=0 python ./spiga/demo/app.py --input {} --save --noview --outpath /data/datasets_v2/faces_v3/" &
+CUDA_VISIBLE_DEVICES=0 python ./spiga/demo/app2.py --input  /data/datasets_v2/clip_videos_v3/ --save --noview --outpath /data/datasets_v2/faces_v3/ -x 0:4 &
+CUDA_VISIBLE_DEVICES=1 python ./spiga/demo/app2.py --input  /data/datasets_v2/clip_videos_v3/ --save --noview --outpath /data/datasets_v2/faces_v3/ -x 0:4 &
+CUDA_VISIBLE_DEVICES=2 python ./spiga/demo/app2.py --input  /data/datasets_v2/clip_videos_v3/ --save --noview --outpath /data/datasets_v2/faces_v3/ -x 0:4 &
+CUDA_VISIBLE_DEVICES=3 python ./spiga/demo/app2.py --input  /data/datasets_v2/clip_videos_v3/ --save --noview --outpath /data/datasets_v2/faces_v3/ -x 0:4 &
 """
