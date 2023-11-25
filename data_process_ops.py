@@ -106,3 +106,145 @@ class FaceCropper:
     def process_face_video(self,frame,frame_no):
         frame = crop_face(frame,self.data[frame_no],mode='mouth',output_size=(128,128))
         return frame
+
+
+def video_to_3d_np_array(video_path):
+    cap = cv2.VideoCapture(video_path)
+    frames = []
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if ret:
+            frames.append(frame)
+        else:
+            break
+    return np.array(frames)
+
+def frames_to_square_tiles(frames):
+    """
+    input: frames: n*256*256*3
+    output: tiles: (sqrt(n)*256)*(sqrt(n)*256)*3
+    """
+    n_frames = frames.shape[0]
+    h,w = frames.shape[1:3]
+    # check if n is a square number
+    sqrt_n = int(np.sqrt(n_frames))
+    assert sqrt_n*sqrt_n == n_frames, "number of frames must be a square number"
+    
+    canvas = np.zeros((sqrt_n*h,sqrt_n*w,3),dtype=np.uint8)
+    for i in range(sqrt_n):
+        for j in range(sqrt_n):
+            canvas[i*h:(i+1)*h,j*w:(j+1)*w,:] = frames[i*sqrt_n+j]
+    return canvas
+
+
+# scrabble
+
+"""
+take cropped video frames and subtitles, generate:
+    training image: 384*384 images each consists of n frames of tile of 16*16 video frames
+    training label: transcript of the video within those frames
+video frames
+"""
+# load video frames into numpy array
+import cv2
+import numpy as np
+from glob import glob
+from os.path import join,basename
+import json
+from pprint import pprint
+from data_process_ops import *
+import os
+import ht2
+
+data_root = "/data/datasets_v2/"
+video_paths = glob(join(data_root,"mouth_crops/*.mp4"))
+sample_video = video_paths[0]
+print(sample_video)
+label_path = join(data_root,"labels_v3",basename(sample_video).replace(".mp4",".json"))
+with open(label_path) as f:
+    label = json.load(f)
+text = label["text_postprocessed"]
+timestamps = label["time_stamp"]
+frames = video_to_3d_np_array(sample_video)
+cap = cv2.VideoCapture(sample_video)
+fps = cap.get(cv2.CAP_PROP_FPS)
+
+time_slide_window_step = 1 # second
+time_slide_window_size = 384*384//(32*32) # frames
+
+# generate training data
+for start_frame_no in range(0,len(frames),int(time_slide_window_step*fps)):
+    end_frame_no = start_frame_no + time_slide_window_size
+    if end_frame_no > len(frames):
+        break
+    # get frames
+    print(start_frame_no,end_frame_no)
+    training_frames = frames[start_frame_no:end_frame_no]
+    
+    print(len(training_frames))
+    tile_image = frames_to_square_tiles(training_frames)
+    # tile_image = cv2.cvtColor(tile_image,cv2.COLOR_BGR2RGB)
+    tile_image = cv2.resize(tile_image,(384,384))
+    cv2.imwrite("test_img.jpg",tile_image)
+    
+
+    # get text
+    training_text = ""
+    for i in range(len(timestamps)):
+        if timestamps[i][0] >= start_frame_no/fps*1000 and timestamps[i][1] <= end_frame_no/fps*1000:
+            training_text += text[i]
+    print(training_text)
+    
+    
+    # save frames and text
+    # np.save(join(data_root,"training_frames",basename(sample_video).replace(".mp4","_%d_%d.npy"%(start_time_stamp,end_time_stamp))),training_frames)
+    # with open(join(data_root,"training_text",basename(sample_video).replace(".mp4","_%d_%d.txt"%(start_time_stamp,end_time_stamp))),"w") as f:
+    #     f.write(training_text)
+
+
+# clean up into functions
+
+def generate_image_sequence_transcription_training_data(frames,text,timestamps,export_path):
+    """
+    input: frames: video represented by 3d numpy array
+           text: text transcript
+           timestamps: timestamps of each word in the transcript
+    output:
+        image file saved
+        text file saved
+    """
+    text = label["text_postprocessed"]
+    timestamps = label["time_stamp"]
+    frames = video_to_3d_np_array(sample_video)
+    cap = cv2.VideoCapture(sample_video)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+
+    time_slide_window_step = 1 # second
+    time_slide_window_size = 384*384//(32*32) # frames
+
+    # generate training data
+    for start_frame_no in range(0,len(frames),int(time_slide_window_step*fps)):
+        end_frame_no = start_frame_no + time_slide_window_size
+        if end_frame_no > len(frames):
+            break
+        # get frames
+        print(start_frame_no,end_frame_no)
+        training_frames = frames[start_frame_no:end_frame_no]
+        
+        print(len(training_frames))
+        tile_image = frames_to_square_tiles(training_frames)
+        # tile_image = cv2.cvtColor(tile_image,cv2.COLOR_BGR2RGB)
+        tile_image = cv2.resize(tile_image,(384,384))
+        cv2.imwrite("test_img.jpg",tile_image)
+        
+
+        # get text
+        training_text = ""
+        for i in range(len(timestamps)):
+            if timestamps[i][0] >= start_frame_no/fps*1000 and timestamps[i][1] <= end_frame_no/fps*1000:
+                training_text += text[i]
+        print(training_text)
+
+
+
+    
